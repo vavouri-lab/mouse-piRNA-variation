@@ -7,7 +7,6 @@ echo
 echo "Running script:$0 on machine:$machine on date:$(date)"
 
 ### The repeat masker annotation is in 3-column bed format, fownloaded from UCSC for mm10.
-### The coordinates of the 214 piRNA-producing clusters are derived from Li et al Mol Cell 2013.
 
 myDir=~/Projects/mouse-piRNA-variation # Project working directory
 rmsk=$myDir/data/rmsk_mm10.bed
