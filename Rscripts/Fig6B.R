@@ -156,9 +156,9 @@ NE_withTEV <- subsetByOverlaps(clustersGR,
 # INS : BL6 does not have the TE but the other strain has it
 # DEL : BL6 has the TE but the other strain does not have it
 
-strandAnalysis <- c("T", "F")
+sameStrand <- c("T", "F")
 
-for(i in strandAnalysis){
+for(i in sameStrand){
 # Run the following code twice. 
 # The 2nd time considering clusters and TEs in opposite strands.
   if(i == "F"){
