@@ -4,20 +4,15 @@ rm(list = myvars)
 rm(myvars)
  
 ####################################################################
-# Script to generate Figure 4B
+# Script to generate Figure 6B
 ####################################################################
  
 ##################################
 # load required libraries
 library(DESeq2)
-# library(dplyr)
-# library("RColorBrewer") # Needed for the figures
-# library("vioplot")
 library(beeswarm)
 ##################################
  
-##################################
-# Define parameters
 ##################################
 # Filtering of clusters
 removeLowCountClusters <- T
@@ -88,10 +83,8 @@ if (removeOverlapingClusters) {
 tevDF <- read.table(paste0(dir, tev_f), header = T)
 # Remove any TEVs that did not convert to mm10
 tevDF <- tevDF[!is.na(tevDF[, "start_mm10"]),] 
-# Strand is "None" according to Nellaker et al
-tevDF[tevDF[, "strand_mm10"] == "N", "strand_mm10"] <- "*"
-# Strand is 0 according to Nellaker et al
-tevDF[tevDF[, "strand_mm10"] == "0", "strand_mm10"] <- "*" 
+# Remove any TEVs that do not have clear strand
+tevDF <- tevDF[tevDF[,"strand_mm10"] == "+" | tevDF[,"strand_mm10"] == "-",]
 
 # Create a GRanges object with TEV coordinates
 tevGR <- GRanges(
@@ -163,9 +156,18 @@ NE_withTEV <- subsetByOverlaps(clustersGR,
 # INS : BL6 does not have the TE but the other strain has it
 # DEL : BL6 has the TE but the other strain does not have it
 
+strandAnalysis <- c("T", "F")
+
+for(i in strandAnalysis){
+# Run the following code twice. 
+# The 2nd time considering clusters and TEs in opposite strands.
+  if(i == "F"){
+    clustersGR <- invertStrand(clustersGR)
+  }
+  
 # Get clusters with SINEs only in BL6
 NE_SINE_strain1plus <- subsetByOverlaps(
-  ignore.strand = T,
+  ignore.strand = F,
   clustersGR,
   tevGR[tevGR$TEVtype == "SINE"
         & elementMetadata(tevGR[, strain2])[, 1] == "DEL", ],
@@ -173,7 +175,7 @@ NE_SINE_strain1plus <- subsetByOverlaps(
 
 # Get clusters with LINEs only in BL6
 NE_LINE_strain1plus <- subsetByOverlaps(
-  ignore.strand = T,
+  ignore.strand = F,
   clustersGR,
   tevGR[(tevGR$TEVtype == "LINE"
          | tevGR$TEVtype == "LINE_frag")
@@ -182,7 +184,7 @@ NE_LINE_strain1plus <- subsetByOverlaps(
 
 # Get clusters with ERVs only in BL6
 NE_ERV_strain1plus <- subsetByOverlaps(
-  ignore.strand = T,
+  ignore.strand = F,
   clustersGR,
   tevGR[(tevGR$TEVtype != "SINE"
          & tevGR$TEVtype != "LINE"
@@ -192,7 +194,7 @@ NE_ERV_strain1plus <- subsetByOverlaps(
 
 # Get clusters with IAPs only in BL6
 NE_IAP_strain1plus <- subsetByOverlaps(
-  ignore.strand = T,
+  ignore.strand = F,
   clustersGR,
   tevGR[(tevGR$TEVtype == "IAP-I")
         & elementMetadata(tevGR[, strain2])[, 1] == "DEL", ],
@@ -202,7 +204,7 @@ NE_IAP_strain1plus <- subsetByOverlaps(
 ###############################################
 # Get clusters with SINEs only in CAST
 NE_SINE_strain2plus <- subsetByOverlaps(
-  ignore.strand = T,
+  ignore.strand = F,
   clustersGR,
   tevGR[tevGR$TEVtype == "SINE"
         & elementMetadata(tevGR[, strain2])[, 1] == "INS", ],
@@ -210,7 +212,7 @@ NE_SINE_strain2plus <- subsetByOverlaps(
 
 # Get clusters with LINEs only in CAST
 NE_LINE_strain2plus <- subsetByOverlaps(
-  ignore.strand = T,
+  ignore.strand = F,
   clustersGR,
   tevGR[(tevGR$TEVtype == "LINE"
          | tevGR$TEVtype == "LINE_frag")
@@ -219,7 +221,7 @@ NE_LINE_strain2plus <- subsetByOverlaps(
 
 # Get clusters with ERVs only in CAST
 NE_ERV_strain2plus <- subsetByOverlaps(
-  ignore.strand = T,
+  ignore.strand = F,
   clustersGR,
   tevGR[(tevGR$TEVtype != "SINE"
          & tevGR$TEVtype != "LINE"
@@ -229,7 +231,7 @@ NE_ERV_strain2plus <- subsetByOverlaps(
 
 # Get clusters with IAPs only in CAST
 NE_IAP_strain2plus <- subsetByOverlaps(
-  ignore.strand = T,
+  ignore.strand = F,
   clustersGR,
   tevGR[(tevGR$TEVtype == "IAP-I")
         & elementMetadata(tevGR[, strain2])[, 1] == "INS", ],
@@ -257,6 +259,7 @@ myListStrain2 = list(
 beeswarm(
   myListStrain1,
   main = paste(strain1, " vs ", strain2),
+  sub = paste("same strand = ", i),
   pch = c(19, 24, 24, 24, 24),
   cex = mycex,
   corral = "random",
@@ -356,7 +359,7 @@ lines(
   lwd = 2
 )
 
-print(paste(strain1, "vs", strain2))
+print(paste(strain1, "vs", strain2, "same strand =", i))
 
 if (length(NE_LINE_strain1plus) > 0 &
     length(NE_LINE_strain2plus) > 0) {
@@ -384,9 +387,9 @@ if (length(NE_IAP_strain1plus) > 0 &
 
 grid()
 
+}
 #       ## The following is a wilcoxon mann whitney test that can cope with ties. I didn't use these p-values in the paper but they are actually extremely similar to the pvalues of the test that I used (above).
 #       library(coin)
 #       wilcox_test(fc ~ strainplus, mydf)
 
 
- 
